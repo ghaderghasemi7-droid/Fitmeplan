@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitPlan">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>FitPlan</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--surface3:#242424;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#f0f0f0;--muted:#777;--muted2:#aaa;
+  --accent:#c8ff00;--accent-dim:rgba(200,255,0,0.10);
+  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,10,0.97);backdrop-filter:blur(24px);border-top:0.5px solid var(--border);display:flex;padding-bottom:var(--safe-bottom);z-index:200}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:9px;font-weight:500;cursor:pointer;transition:color 0.15s;letter-spacing:.04em;text-transform:uppercase}
+.nav-btn.active{color:var(--accent)}
+.nav-icon{font-size:19px}
+
+.screen{display:none;padding-top:var(--safe-top);padding-bottom:calc(70px + var(--safe-bottom));min-height:100dvh}
+.screen.active{display:block}
+
+.page-header{padding:20px 16px 0;margin-bottom:14px}
+.page-header h1{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:1px;line-height:1}
+.page-header p{font-size:12px;color:var(--muted);margin-top:3px}
+
+.day-scroll{display:flex;gap:6px;padding:0 16px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}
+.day-scroll::-webkit-scrollbar{display:none}
+.day-chip{flex-shrink:0;padding:6px 13px;border-radius:20px;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.day-chip.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.day-chip.rest{opacity:.6}
+
+.cards{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:16px;overflow:hidden}
+.card-header{display:flex;justify-content:space-between;align-items:center;padding:11px 14px 9px;border-bottom:0.5px solid var(--border)}
+.card-label{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.card-time{font-size:11px;color:var(--muted)}
+.card-body{padding:12px 14px}
+.card-name{font-size:15px;font-weight:500;margin-bottom:5px}
+.card-sub{font-size:12px;color:var(--muted2);line-height:1.6;margin-bottom:8px}
+.card-tip{font-size:12px;color:var(--muted2);background:var(--surface2);padding:8px 10px;margin-top:8px;border-left:2px solid var(--accent);border-radius:0 8px 8px 0}
+
+.tags{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:10px;padding:2px 7px;border-radius:5px;font-weight:500}
+.tag-back{background:rgba(79,195,247,.12);color:#4fc3f7}
+.tag-leg{background:rgba(255,183,77,.12);color:#ffb74d}
+.tag-shoulder{background:rgba(206,147,216,.12);color:#ce93d8}
+.tag-other{background:rgba(255,255,255,.06);color:#999}
+.tag-p{background:rgba(200,255,0,.10);color:#c8ff00}
+.tag-k{background:rgba(255,183,77,.10);color:#ffb74d}
+.tag-f{background:rgba(206,147,216,.10);color:#ce93d8}
+.tag-cal{background:rgba(255,255,255,.05);color:#999}
+.priority{font-size:10px;padding:1px 6px;background:var(--accent-dim);color:var(--accent);border-radius:4px;margin-left:5px}
+
+.sets-badge{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent);display:inline-block;margin-bottom:2px}
+
+.track-row{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);flex-wrap:wrap}
+.track-label{font-size:11px;color:var(--muted)}
+.track-input{width:62px;padding:6px 8px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;text-align:center}
+.track-input:focus{outline:none;border-color:var(--accent)}
+.track-unit{font-size:11px;color:var(--muted)}
+.track-saved{font-size:11px;color:var(--accent);opacity:0;transition:opacity .3s;margin-left:4px}
+.track-saved.show{opacity:1}
+
+.week-summary{margin:0 16px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:14px}
+.week-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.week-ex-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.week-ex-name{font-size:11px;color:var(--muted2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.week-bar-wrap{flex:1.5;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.week-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+.week-ex-val{font-size:11px;color:var(--accent);min-width:70px;text-align:right}
+
+.rest-card{margin:0 16px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:20px;text-align:center}
+.rest-card .ri{font-size:30px;margin-bottom:6px}
+.rest-card h3{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--muted)}
+.rest-card p{font-size:12px;color:var(--muted);margin-top:4px}
+
+.totals-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px;margin-bottom:12px}
+.total-chip{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:10px 4px;text-align:center}
+.total-chip .tv{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--accent)}
+.total-chip .tl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+
+.day-note{margin:10px 16px 0;background:var(--surface2);border-left:2px solid var(--accent);border-radius:0 10px 10px 0;padding:10px 12px;font-size:12px;color:var(--muted2)}
+.day-note strong{color:var(--text)}
+
+.shop-section{margin:0 16px 14px}
+.shop-section-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-left:2px}
+.shop-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;margin-bottom:5px;cursor:pointer;transition:opacity .15s}
+.shop-item.checked{opacity:.35}
+.shop-check{width:20px;height:20px;border:1.5px solid var(--border2);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s}
+.shop-item.checked .shop-check{background:var(--accent);border-color:var(--accent);color:#000}
+.shop-item-name{font-size:13px;flex:1}
+.shop-item-qty{font-size:11px;color:var(--muted)}
+.shop-clear{display:block;width:100%;padding:8px;margin-top:4px;background:none;border:0.5px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer}
+.shop-progress{padding:0 16px;margin-bottom:14px}
+.shop-prog-row{display:flex;justify-content:space-between;margin-bottom:5px}
+.shop-prog-label{font-size:12px;color:var(--muted)}
+.shop-prog-val{font-size:12px;color:var(--accent)}
+.shop-prog-bar{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.shop-prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+
+.recipe-card{margin:0 16px 8px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;overflow:hidden}
+.recipe-header{padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.recipe-title{font-size:14px;font-weight:500}
+.recipe-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.recipe-chevron{color:var(--muted);font-size:13px;transition:transform .2s}
+.recipe-card.open .recipe-chevron{transform:rotate(180deg)}
+.recipe-body{display:none;padding:0 16px 16px;border-top:0.5px solid var(--border)}
+.recipe-card.open .recipe-body{display:block}
+.recipe-section{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:12px 0 6px}
+.recipe-ing{font-size:13px;color:var(--muted2);padding:5px 0;border-bottom:0.5px solid var(--border)}
+.recipe-ing:last-of-type{border-bottom:none}
+.recipe-step{display:flex;gap:10px;margin-bottom:8px}
+.step-num{width:22px;height:22px;background:var(--accent-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--accent);flex-shrink:0;margin-top:2px}
+.step-text{font-size:13px;color:var(--muted2);line-height:1.6}
+.recipe-tip{background:var(--surface2);border-left:2px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 10px;font-size:12px;color:var(--muted2);margin-top:8px}
+
+.weight-card{margin:0 16px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:14px}
+.weight-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.weight-input-row{display:flex;gap:8px;margin-bottom:12px}
+.weight-input-row input{flex:1;padding:10px 12px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif}
+.weight-input-row input:focus{outline:none;border-color:var(--accent)}
+.weight-input-row button{padding:10px 16px;background:var(--accent);color:#000;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer}
+.weight-entry{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)}
+.weight-entry:last-child{border-bottom:none}
+.weight-date{font-size:12px;color:var(--muted)}
+.weight-val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent)}
+.weight-diff{font-size:11px}
+.weight-diff.up{color:#ff6b6b}
+.weight-diff.down{color:var(--accent)}
+.weight-empty{font-size:13px;color:var(--muted);text-align:center;padding:16px 0}
+
+.spacer{height:16px}
+</style>
+</head>
+<body>
+
+<div id="screen-training" class="screen active">
+  <div class="page-header"><h1>Training</h1><p>Fokus: Rücken · Beine · Schultern</p></div>
+  <div id="week-summary-box"></div>
+  <div class="day-scroll" id="train-days"></div>
+  <div id="train-content"></div>
+</div>
+
+<div id="screen-nutrition" class="screen">
+  <div class="page-header"><h1>Ernährung</h1><p>2700 kcal · 125g Protein täglich</p></div>
+  <div class="day-scroll" id="nutr-days"></div>
+  <div id="nutr-content"></div>
+</div>
+
+<div id="screen-shopping" class="screen">
+  <div class="page-header"><h1>Einkaufsliste</h1><p>Wochenbedarf für Meal Prep</p></div>
+  <div class="shop-progress" id="shop-progress"></div>
+  <div id="shop-content"></div>
+</div>
+
+<div id="screen-recipes" class="screen">
+  <div class="page-header"><h1>Meal Prep</h1><p>Rezepte für die Wochenvorbereitung</p></div>
+  <div id="recipes-content"></div>
+</div>
+
+<div id="screen-progress" class="screen">
+  <div class="page-header"><h1>Fortschritt</h1><p>Gewicht & Wochenübersicht</p></div>
+  <div id="progress-content"></div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchScreen('training',this)"><span class="nav-icon">💪</span>Training</button>
+  <button class="nav-btn" onclick="switchScreen('nutrition',this)"><span class="nav-icon">🥗</span>Essen</button>
+  <button class="nav-btn" onclick="switchScreen('shopping',this)"><span class="nav-icon">🛒</span>Einkauf</button>
+  <button class="nav-btn" onclick="switchScreen('recipes',this)"><span class="nav-icon">📋</span>Rezepte</button>
+  <button class="nav-btn" onclick="switchScreen('progress',this)"><span class="nav-icon">📈</span>Progress</button>
+</nav>
+
+<script>
+// ── DATA ────────────────────────────────────────────────────────────────
+
+const TRAIN_DAYS=[
+  {label:"Mo",title:"Rücken + Schultern",type:"train",duration:"50 Min",focus:["Rücken","Schultern"],exercises:[
+    {id:"mo1",name:"Klimmzug (Band)",sets:"4",reps:"5-8",eq:"Stange + Band",muscles:["Rücken","Bizeps"],tip:"Schulterblätter zuerst runterziehen, dann Arme beugen",priority:true},
+    {id:"mo2",name:"KH-Rudern beidarmig",sets:"4",reps:"10",eq:"Kurzhanteln",muscles:["Rücken","Bizeps"],tip:"Ellbogen hoch, Schulterblatt am Ende zusammenziehen",priority:true},
+    {id:"mo3",name:"Schulterdrücken stehend",sets:"3",reps:"10",eq:"Kurzhanteln",muscles:["Schultern","Trizeps"],tip:"Kern fest, kein Hohlkreuz",priority:true},
+    {id:"mo4",name:"Face Pull mit Band",sets:"3",reps:"12",eq:"Band",muscles:["hint.Schulter","Rücken"],tip:"Hände zur Stirn, Ellbogen hoch",priority:true},
+    {id:"mo5",name:"Plank",sets:"3",reps:"30 Sek",eq:"Körpergewicht",muscles:["Kern"],tip:"Kein Hohlkreuz, Gesäß nicht hochziehen"},
+  ]},
+  {label:"Di",title:"Mobilität",type:"rest",duration:"20 Min",focus:[],exercises:[
+    {id:"di1",name:"Band Pull-Apart",sets:"2",reps:"15",eq:"Band",muscles:["hint.Schulter"],tip:"Schulterblätter aktiv zusammenziehen"},
+    {id:"di2",name:"Thorax-Rotation",sets:"2",reps:"10/Seite",eq:"Boden",muscles:["Rücken"],tip:"Hüfte bleibt fixiert"},
+    {id:"di3",name:"Hip Flexor Stretch",sets:"2",reps:"45 Sek",eq:"Boden",muscles:["Hüftbeuger"],tip:"Hüfte nach vorne schieben"},
+  ]},
+  {label:"Mi",title:"Beine (Quad)",type:"train",duration:"50 Min",focus:["Beine"],exercises:[
+    {id:"mi1",name:"Goblet Squat",sets:"4",reps:"10",eq:"Kurzhantel",muscles:["Quadrizeps","Gesäß"],tip:"Knie über Zeh, so tief wie möglich",priority:true},
+    {id:"mi2",name:"Bulgarische Kniebeuge",sets:"3",reps:"8/Seite",eq:"KG/Hantel",muscles:["Quadrizeps","Gesäß"],tip:"Vorderes Knie NICHT nach innen",priority:true},
+    {id:"mi3",name:"Sumo Squat",sets:"3",reps:"12",eq:"Kurzhantel",muscles:["Adduktoren","Gesäß"],tip:"Breite Stance, Zehen nach außen",priority:true},
+    {id:"mi4",name:"Step-Up auf Stuhl",sets:"3",reps:"10/Seite",eq:"KG/Hantel",muscles:["Quadrizeps","Gesäß"],tip:"Drück dich über die Ferse hoch"},
+    {id:"mi5",name:"Dead Bug",sets:"3",reps:"8/Seite",eq:"Körpergewicht",muscles:["Kern"],tip:"Lendenwirbel bleibt am Boden"},
+  ]},
+  {label:"Do",title:"Mobilität",type:"rest",duration:"20 Min",focus:[],exercises:[
+    {id:"do1",name:"Couch Stretch",sets:"2",reps:"45 Sek",eq:"Wand",muscles:["Hüftbeuger"],tip:"Nach dem Beintag essenziell"},
+    {id:"do2",name:"Pigeon Pose",sets:"2",reps:"45 Sek",eq:"Boden",muscles:["Gesäß"],tip:"Hüfte gerade ausrichten"},
+    {id:"do3",name:"Katzenbuckel/Hohlkreuz",sets:"2",reps:"10",eq:"Boden",muscles:["Rücken"],tip:"Langsam und kontrolliert"},
+  ]},
+  {label:"Fr",title:"Rücken + Schultern",type:"train",duration:"50 Min",focus:["Rücken","Schultern"],exercises:[
+    {id:"fr1",name:"Einarm-KH-Rudern",sets:"4",reps:"10/Seite",eq:"Kurzhantel",muscles:["Rücken","Bizeps"],tip:"Schulterblatt voll nach hinten ziehen",priority:true},
+    {id:"fr2",name:"Klimmzug (Band)",sets:"3",reps:"max",eq:"Stange + Band",muscles:["Rücken","Bizeps"],tip:"1 Wdh mehr als Mo anstreben",priority:true},
+    {id:"fr3",name:"Lateral Raise",sets:"3",reps:"12",eq:"Kurzhanteln",muscles:["Schultern"],tip:"Kontrolliert senken, nicht schaukeln",priority:true},
+    {id:"fr4",name:"Pike Push-up",sets:"3",reps:"8",eq:"Körpergewicht",muscles:["Schultern","Trizeps"],tip:"Hüfte hoch, Kopf Richtung Boden",priority:true},
+    {id:"fr5",name:"Side Plank",sets:"2",reps:"25 Sek",eq:"Körpergewicht",muscles:["Kern"],tip:"Gerade Linie von Kopf bis Fuß"},
+  ]},
+  {label:"Sa",title:"Beine (Posterior)",type:"train",duration:"50 Min",focus:["Beine"],exercises:[
+    {id:"sa1",name:"Rumänisches Kreuzheben",sets:"4",reps:"10",eq:"Kurzhanteln",muscles:["Beinbizeps","Gesäß"],tip:"Rücken gerade, Hantel am Bein entlang",priority:true},
+    {id:"sa2",name:"Hip Thrust (Couch)",sets:"4",reps:"12",eq:"Kurzhantel",muscles:["Gesäß","Beinbizeps"],tip:"Hüfte voll strecken, oben kurz halten",priority:true},
+    {id:"sa3",name:"Good Morning (Band)",sets:"3",reps:"12",eq:"Band",muscles:["Beinbizeps","Rücken"],tip:"Langsam, Rücken bleibt gerade",priority:true},
+    {id:"sa4",name:"Ausfallschritte",sets:"3",reps:"10/Seite",eq:"KG/Hantel",muscles:["Quadrizeps","Gesäß"],tip:"Knie berührt fast den Boden"},
+    {id:"sa5",name:"Hollow Body Hold",sets:"3",reps:"20 Sek",eq:"Körpergewicht",muscles:["Kern"],tip:"Beine so tief wie möglich ohne Hohlkreuz"},
+  ]},
+  {label:"So",title:"Erholung",type:"rest",duration:"15 Min",focus:[],exercises:[
+    {id:"so1",name:"Foam Roller",sets:"1",reps:"8-10 Min",eq:"Boden",muscles:["Gesamt"],tip:"Fokus: Oberschenkel, Rücken, Schultern"},
+    {id:"so2",name:"Box Breathing",sets:"1",reps:"5 Min",eq:"Nichts",muscles:["Zwerchfell"],tip:"4 ein · 4 halten · 4 aus · 4 halten"},
+  ]},
+];
+
+const NUTR_DAYS=[
+  {label:"Mo",note:"Trainingstag — Pre-Workout Snack 60-90 Min vor dem Training.",meals:[
+    {time:"07:00",title:"Frühstück",name:"Overnight Oats mit Quark",ingredients:"80g Haferflocken · 200g Magerquark · 150ml Milch · 1 Banane · 1 EL Chiasamen",p:35,k:75,f:10,kcal:530},
+    {time:"12:30",title:"Mittagessen",name:"Hähnchen · Reis · Brokkoli",ingredients:"200g Hähnchenbrust · 150g Reis · 200g Brokkoli · 1 EL Olivenöl",p:52,k:95,f:12,kcal:700},
+    {time:"15:30",title:"Pre-Workout",name:"Joghurt mit Nüssen",ingredients:"250g Joghurt 10% · 30g Nüsse · 1 TL Honig",p:20,k:18,f:20,kcal:330},
+    {time:"19:00",title:"Abendessen",name:"Lachs · Süßkartoffel · Spinat",ingredients:"180g Lachs · 200g Süßkartoffel · 100g Spinat · 1 EL Olivenöl",p:38,k:42,f:22,kcal:530},
+    {time:"21:00",title:"Abend-Snack",name:"Hüttenkäse mit Beeren",ingredients:"200g Hüttenkäse · 100g Beeren",p:22,k:12,f:4,kcal:170},
+  ]},
+  {label:"Di",note:"Mobilitätstag — kein spezielles Timing nötig.",meals:[
+    {time:"07:00",title:"Frühstück",name:"Rührei mit Vollkornbrot",ingredients:"3 Eier · 2 Scheiben Vollkornbrot · 1 Tomate · 1 EL Butter",p:28,k:40,f:18,kcal:435},
+    {time:"12:30",title:"Mittagessen",name:"Meal Prep: Hähnchen & Reis",ingredients:"200g Hähnchenbrust · 150g Reis · 200g Brokkoli · 1 EL Olivenöl",p:52,k:95,f:12,kcal:700},
+    {time:"15:30",title:"Snack",name:"Apfel mit Mandelmus",ingredients:"1 Apfel · 2 EL Mandelmus",p:5,k:35,f:15,kcal:290},
+    {time:"19:00",title:"Abendessen",name:"Rindfleisch-Gemüse-Pfanne",ingredients:"180g Hackfleisch mager · 200g Zucchini+Paprika · 120g Reis · 1 EL Olivenöl",p:42,k:80,f:18,kcal:655},
+    {time:"21:00",title:"Abend-Snack",name:"Magerquark mit Leinsamen",ingredients:"200g Magerquark · 1 EL Leinsamen · Honig",p:24,k:10,f:5,kcal:180},
+  ]},
+  {label:"Mi",note:"Beintag — kohlenhydratreiches Frühstück gibt Energie für die Squats.",meals:[
+    {time:"07:00",title:"Frühstück",name:"Protein-Pfannkuchen",ingredients:"3 Eier · 80g Haferflocken · 100g Magerquark · 1 Banane",p:38,k:65,f:14,kcal:545},
+    {time:"12:30",title:"Mittagessen",name:"Meal Prep: Hähnchen & Reis",ingredients:"200g Hähnchenbrust · 150g Reis · 200g Brokkoli · 1 EL Olivenöl",p:52,k:95,f:12,kcal:700},
+    {time:"15:30",title:"Pre-Workout",name:"Reiswaffeln mit Thunfisch",ingredients:"4 Reiswaffeln · 100g Thunfisch Dose · 1 EL Frischkäse",p:22,k:28,f:6,kcal:255},
+    {time:"19:00",title:"Abendessen",name:"Kichererbsen-Feta-Bowl",ingredients:"300g Gemüse · 150g Kichererbsen · 50g Feta · 1 EL Olivenöl",p:18,k:48,f:18,kcal:425},
+    {time:"21:00",title:"Abend-Snack",name:"Griechischer Joghurt",ingredients:"250g Joghurt 10% · 1 TL Honig",p:17,k:14,f:14,kcal:250},
+  ]},
+  {label:"Do",note:"Leichterer Tag — keine Pre-Workout Planung.",meals:[
+    {time:"07:00",title:"Frühstück",name:"Overnight Oats (vorbereitet)",ingredients:"80g Haferflocken · 200g Magerquark · 150ml Milch · 100g Beeren",p:33,k:72,f:9,kcal:510},
+    {time:"12:30",title:"Mittagessen",name:"Linsensuppe mit Vollkornbrot",ingredients:"200g rote Linsen · 1 Karotte · 1 Zwiebel · 2 Scheiben Brot",p:28,k:85,f:6,kcal:510},
+    {time:"15:30",title:"Snack",name:"Hüttenkäse mit Gurke",ingredients:"200g Hüttenkäse · 1 Gurke",p:22,k:8,f:4,kcal:160},
+    {time:"19:00",title:"Abendessen",name:"Hähnchen & Süßkartoffel",ingredients:"200g Hähnchenbrust · 200g Süßkartoffel · 100g grüne Bohnen · 1 EL Olivenöl",p:48,k:55,f:13,kcal:535},
+    {time:"21:00",title:"Abend-Snack",name:"Magerquark mit Nüssen",ingredients:"150g Magerquark · 20g Walnüsse",p:18,k:4,f:13,kcal:205},
+  ]},
+  {label:"Fr",note:"Rücken+Schultern — Lachs abends liefert Omega-3 für Regeneration.",meals:[
+    {time:"07:00",title:"Frühstück",name:"Rührei mit Avocado",ingredients:"3 Eier · ½ Avocado · 2 Scheiben Vollkornbrot",p:26,k:38,f:24,kcal:475},
+    {time:"12:30",title:"Mittagessen",name:"Hackfleisch-Reis-Bowl",ingredients:"180g Rinderhackfleisch · 150g Reis · 150g Paprika+Zwiebel · 1 EL Olivenöl",p:44,k:90,f:16,kcal:690},
+    {time:"15:30",title:"Pre-Workout",name:"Banane mit Magerquark",ingredients:"1 Banane · 150g Magerquark",p:18,k:32,f:2,kcal:215},
+    {time:"19:00",title:"Abendessen",name:"Lachs · Linsen · Spinat",ingredients:"180g Lachs · 150g Linsen · 100g Spinat · 1 EL Olivenöl",p:45,k:32,f:20,kcal:490},
+    {time:"21:00",title:"Abend-Snack",name:"Joghurt mit Chiasamen",ingredients:"200g Joghurt · 1 EL Chiasamen",p:16,k:10,f:15,kcal:235},
+  ]},
+  {label:"Sa",note:"Kalorienreichster Tag — Energie für RDL und Hip Thrust.",meals:[
+    {time:"08:00",title:"Frühstück",name:"Protein-Pfannkuchen (groß)",ingredients:"4 Eier · 100g Haferflocken · 100g Magerquark · 1 Banane · Zimt",p:44,k:80,f:16,kcal:645},
+    {time:"13:00",title:"Mittagessen",name:"Hähnchen-Wrap",ingredients:"200g Hähnchenbrust · 2 Vollkorn-Wraps · Salat · Tomate",p:50,k:70,f:12,kcal:600},
+    {time:"15:30",title:"Pre-Workout",name:"Reiswaffeln mit Erdnussbutter",ingredients:"4 Reiswaffeln · 2 EL Erdnussbutter",p:10,k:30,f:16,kcal:300},
+    {time:"19:30",title:"Post-Workout",name:"Rindersteak mit Kartoffeln",ingredients:"200g Rindersteak · 250g Kartoffeln · Salat · 1 EL Olivenöl",p:48,k:52,f:16,kcal:545},
+    {time:"21:30",title:"Abend-Snack",name:"Hüttenkäse pur",ingredients:"200g Hüttenkäse",p:22,k:6,f:4,kcal:145},
+  ]},
+  {label:"So",note:"MEAL PREP TAG — Hähnchen, Reis, Brokkoli für Mo–Mi vorbereiten.",meals:[
+    {time:"08:00",title:"Frühstück",name:"Rührei mit Gemüse",ingredients:"4 Eier · 1 Paprika · 1 Zwiebel · 2 Scheiben Vollkornbrot",p:32,k:45,f:20,kcal:490},
+    {time:"12:30",title:"Mittagessen",name:"Hähnchen-Reis-Bowl",ingredients:"200g Hähnchenbrust · 150g Reis · 200g Brokkoli · Sojasauce",p:52,k:95,f:11,kcal:695},
+    {time:"15:00",title:"Snack",name:"Magerquark mit Beeren",ingredients:"200g Magerquark · 150g Beeren · 1 TL Honig",p:24,k:22,f:2,kcal:205},
+    {time:"19:00",title:"Abendessen",name:"Thunfisch-Nudel-Auflauf",ingredients:"150g Vollkornnudeln · 200g Thunfisch · 100g Tomatensauce · 30g Käse",p:52,k:85,f:12,kcal:660},
+    {time:"21:00",title:"Abend-Snack",name:"Griechischer Joghurt",ingredients:"200g Joghurt · 1 EL Chiasamen",p:17,k:10,f:14,kcal:235},
+  ]},
+];
+
+const SHOPPING=[
+  {category:"Proteine",items:[
+    {name:"Hähnchenbrust",qty:"1,5 kg"},{name:"Rinderhackfleisch mager",qty:"500 g"},
+    {name:"Lachs (frisch/TK)",qty:"360 g"},{name:"Thunfisch Dose (Wasser)",qty:"3 Dosen"},
+    {name:"Eier",qty:"18 Stück"},{name:"Magerquark",qty:"1 kg"},
+    {name:"Griechischer Joghurt 10%",qty:"1,2 kg"},{name:"Hüttenkäse",qty:"600 g"},
+    {name:"Feta",qty:"100 g"},{name:"Frischkäse",qty:"1 Becher"},
+  ]},
+  {category:"Kohlenhydrate",items:[
+    {name:"Basmati- oder Jasminreis",qty:"1 kg"},{name:"Haferflocken",qty:"500 g"},
+    {name:"Vollkornnudeln",qty:"500 g"},{name:"Vollkornbrot",qty:"1 Laib"},
+    {name:"Vollkorn-Wraps",qty:"4 Stück"},{name:"Reiswaffeln",qty:"1 Packung"},
+    {name:"Süßkartoffeln",qty:"600 g"},{name:"Kartoffeln",qty:"500 g"},
+    {name:"Rote Linsen",qty:"400 g"},{name:"Kichererbsen Dose",qty:"1 Dose"},
+  ]},
+  {category:"Gemüse & Obst",items:[
+    {name:"Brokkoli",qty:"1,2 kg"},{name:"Paprika gemischt",qty:"4 Stück"},
+    {name:"Zucchini",qty:"2 Stück"},{name:"Spinat frisch/TK",qty:"300 g"},
+    {name:"Tomaten",qty:"4 Stück"},{name:"Gurke",qty:"1 Stück"},
+    {name:"Bananen",qty:"6 Stück"},{name:"Äpfel",qty:"3 Stück"},
+    {name:"Beeren TK gemischt",qty:"500 g"},{name:"Avocado",qty:"2 Stück"},
+    {name:"Zwiebeln",qty:"3 Stück"},{name:"Karotten",qty:"2 Stück"},
+  ]},
+  {category:"Fette & Sonstiges",items:[
+    {name:"Olivenöl",qty:"1 Flasche"},{name:"Erdnussbutter (ohne Zusätze)",qty:"1 Glas"},
+    {name:"Mandelmus",qty:"1 Glas"},{name:"Gemischte Nüsse",qty:"150 g"},
+    {name:"Walnüsse",qty:"100 g"},{name:"Chiasamen",qty:"1 Packung"},
+    {name:"Leinsamen",qty:"1 Packung"},{name:"Honig",qty:"1 Glas"},
+    {name:"Sojasauce",qty:"1 Flasche"},{name:"Tomatensauce Dose",qty:"1 Dose"},
+    {name:"Käse gerieben",qty:"100 g"},{name:"Gewürze (Paprika,Knoblauch,Zimt)",qty:"nach Bedarf"},
+  ]},
+];
+
+const RECIPES=[
+  {title:"Hähnchenbrust (Meal Prep Basis)",time:"35 Min",portions:"3 Tage · 600g",
+    ingredients:["600g Hähnchenbrust","2 EL Olivenöl","1 TL Paprikapulver","1 TL Knoblauchpulver","Salz · Pfeffer","Saft ½ Zitrone"],
+    steps:["Backofen auf 200°C vorheizen.","Hähnchen in gleichmäßige Stücke (150-200g) schneiden.","Mit Olivenöl, Gewürzen und Zitronensaft marinieren — mindestens 10 Min.","Auf Backblech mit Backpapier legen, Stücke nicht übereinander.","25-30 Min backen bis Kerntemperatur 74°C erreicht.","Vollständig abkühlen lassen, dann portionieren. Hält 4 Tage im Kühlschrank."],
+    tip:"Doppelte Menge machen — Hälfte einfrieren. Spart Zeit nächste Woche."},
+  {title:"Reis (Wochenportion)",time:"20 Min",portions:"4-5 Tage · 500g",
+    ingredients:["500g Basmati- oder Jasminreis","750ml Wasser","1 TL Salz","1 EL Olivenöl"],
+    steps:["Reis in kaltem Wasser 3x waschen bis das Wasser klar ist — entfernt überschüssige Stärke.","Reis mit Wasser, Salz und Öl in Topf. Verhältnis: 1 Teil Reis, 1,5 Teile Wasser.","Aufkochen, dann kleinste Stufe, Deckel drauf. 15 Min köcheln.","Herd aus, 10 Min ruhen ohne Deckel zu öffnen.","Mit Gabel auflockern, abkühlen, portionieren."],
+    tip:"Erkalteter Reis hat niedrigeren glykämischen Index als frisch gekochter."},
+  {title:"Brokkoli dämpfen",time:"15 Min",portions:"3 Tage · 600g",
+    ingredients:["600g Brokkoli","Salz","Wasser zum Dämpfen"],
+    steps:["Brokkoli in gleichmäßige Röschen schneiden — nicht zu klein.","Wasser aufkochen, Dampfeinsatz oder Sieb drüber.","Brokkoli 5-7 Min dämpfen bis er noch leicht bissfest ist.","Sofort in Eiswasser abschrecken — stoppt den Garprozess, erhält die Farbe.","Abkühlen lassen, in Behälter packen. Hält 4 Tage."],
+    tip:"Nie kochen — dämpfen erhält deutlich mehr Nährstoffe, besonders Vitamin C."},
+  {title:"Overnight Oats (2 Portionen)",time:"5 Min + Nacht",portions:"2 Tage",
+    ingredients:["160g Haferflocken","400g Magerquark","300ml Milch","2 EL Chiasamen","2 TL Honig","200g Beeren zum Servieren"],
+    steps:["Haferflocken, Magerquark, Milch, Chiasamen und Honig gut verrühren.","In 2 Gläser aufteilen.","Min. 6 Std im Kühlschrank quellen lassen — am besten über Nacht.","Morgens mit Beeren servieren."],
+    tip:"Zu dick? Beim Servieren etwas Milch dazugeben."},
+  {title:"Protein-Pfannkuchen",time:"15 Min",portions:"1 Portion",
+    ingredients:["3 Eier","80g Haferflocken (fein gemahlen)","100g Magerquark","1 Banane","1 Prise Salz","Kokosöl oder Butter"],
+    steps:["Haferflocken in Mixer fein mahlen.","Alle Zutaten zusammen mixen bis glatter Teig.","5 Min ruhen lassen — Teig wird etwas dicker.","Pfanne mittelheiß, wenig Fett.","Kleine Portionen (ca. 10cm) einlegen.","2-3 Min pro Seite — erst wenden wenn Oberfläche Blasen bildet."],
+    tip:"Nur einmal wenden. Zu früh wenden = Pfannkuchen reißt."},
+  {title:"Hip Thrust — Setup & Technik",time:"2 Min Setup",portions:"Anleitung",
+    ingredients:["Stabiles Sofa oder Bank","1 Kurzhantel","Gymnastikmatte optional"],
+    steps:["Schulterblätter auf die Sofakante — nicht den Nacken, die Schulterblätter.","Füße hüftbreit, Knie 90° wenn du oben bist.","Kinn zur Brust ziehen — verhindert Hohlkreuz oben.","Kurzhantel auf die Hüfte, mit beiden Händen festhalten.","Hüfte langsam senken (2 Sek), dann explosiv nach oben drücken.","Oben 1 Sek halten, Gesäß anspannen. Langsam runter."],
+    tip:"Druck hauptsächlich im Rücken statt Gesäß? Füße weiter nach vorne stellen."},
+];
+
+// ── STORAGE ────────────────────────────────────────────────────────────
+
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+
+const weekKey=()=>{const d=new Date(),j=new Date(d.getFullYear(),0,1);return`w${Math.ceil((((d-j)/86400000)+j.getDay()+1)/7)}_${d.getFullYear()}`};
+
+let trainDay=0,nutrDay=0;
+let shopChecked=load('shopChecked',{});
+let tracking=load('tracking',{});
+let weightLog=load('weightLog',[]);
+
+// ── HELPERS ────────────────────────────────────────────────────────────
+
+const mClass=m=>(['Rücken','Beinbizeps'].includes(m)?'tag-back':['Quadrizeps','Gesäß','Adduktoren','Hüftbeuger'].includes(m)?'tag-leg':['Schultern','hint.Schulter'].includes(m)?'tag-shoulder':'tag-other');
+const tKey=(id,f)=>`${weekKey()}_${id}_${f}`;
+function saveTrack(id,f,v){tracking[tKey(id,f)]=v;save('tracking',tracking)}
+function loadTrack(id,f){return tracking[tKey(id,f)]||''}
+
+// ── TRAINING ───────────────────────────────────────────────────────────
+
+function renderTrainDays(){
+  document.getElementById('train-days').innerHTML=TRAIN_DAYS.map((d,i)=>
+    `<button class="day-chip ${d.type==='rest'?'rest':''} ${i===trainDay?'active':''}" onclick="selTrain(${i})">${d.label}</button>`).join('');
+}
+
+function renderWeekSummary(){
+  let rows='';
+  TRAIN_DAYS.filter(d=>d.type==='train').forEach(day=>{
+    day.exercises.filter(e=>e.priority).slice(0,2).forEach(ex=>{
+      const wt=loadTrack(ex.id,'weight'),rp=loadTrack(ex.id,'reps'),done=wt||rp;
+      rows+=`<div class="week-ex-row">
+        <div class="week-ex-name">${ex.name}</div>
+        <div class="week-bar-wrap"><div class="week-bar" style="width:${done?100:0}%"></div></div>
+        <div class="week-ex-val">${done?(wt?wt+'kg ':'')+(rp?rp+' Wdh':''):'–'}</div>
+      </div>`;
+    });
+  });
+  document.getElementById('week-summary-box').innerHTML=`<div class="week-summary"><div class="week-title">Diese Woche · Prioritätsübungen</div>${rows||'<p style="font-size:12px;color:var(--muted)">Noch keine Einträge. Training starten und Gewichte eintragen.</p>'}</div>`;
+}
+
+function renderTrainContent(){
+  const d=TRAIN_DAYS[trainDay],el=document.getElementById('train-content');
+  if(d.type==='rest'){
+    el.innerHTML=`<div class="rest-card"><div class="ri">🧘</div><h3>${d.title.toUpperCase()}</h3><p>${d.duration} · Aktive Erholung</p></div>
+    <div class="cards">${d.exercises.map(e=>`<div class="card"><div class="card-body">
+      <div class="sets-badge">${e.sets}×${e.reps}</div>
+      <div class="card-name">${e.name}</div>
+      <div class="card-sub">${e.eq}</div>
+      <div class="tags">${e.muscles.map(m=>`<span class="tag ${mClass(m)}">${m}</span>`).join('')}</div>
+      <div class="card-tip">${e.tip}</div>
+    </div></div>`).join('')}</div><div class="spacer"></div>`;return;
+  }
+  const ft=d.focus.map(f=>`<span class="tag ${f==='Rücken'?'tag-back':f==='Schultern'?'tag-shoulder':'tag-leg'}">${f}</span>`).join('');
+  el.innerHTML=`<div style="padding:0 16px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--muted)">${d.duration}</span><span style="color:var(--border)">·</span>${ft}</div>
+  <div class="cards">${d.exercises.map(e=>{
+    const wt=loadTrack(e.id,'weight'),rp=loadTrack(e.id,'reps');
+    return`<div class="card"><div class="card-body">
+      <div style="display:flex;align-items:baseline;gap:5px;margin-bottom:3px">
+        <span class="sets-badge">${e.sets}×${e.reps}</span>${e.priority?'<span class="priority">Priorität</span>':''}
+      </div>
+      <div class="card-name">${e.name}</div>
+      <div class="card-sub" style="margin-bottom:6px">${e.eq}</div>
+      <div class="tags" style="margin-bottom:8px">${e.muscles.map(m=>`<span class="tag ${mClass(m)}">${m}</span>`).join('')}</div>
+      <div class="card-tip">${e.tip}</div>
+      <div class="track-row">
+        <span class="track-label">Gewicht</span>
+        <input class="track-input" type="number" inputmode="decimal" placeholder="–" value="${wt}" onchange="doTrack('${e.id}','weight',this.value)">
+        <span class="track-unit">kg</span>
+        <span class="track-label" style="margin-left:4px">Wdh</span>
+        <input class="track-input" type="number" inputmode="numeric" placeholder="–" value="${rp}" onchange="doTrack('${e.id}','reps',this.value)">
+        <span id="sv_${e.id}" class="track-saved">✓ gespeichert</span>
+      </div>
+    </div></div>`;
+  }).join('')}</div><div class="spacer"></div>`;
+}
+
+function doTrack(id,f,v){
+  saveTrack(id,f,v);
+  const el=document.getElementById('sv_'+id);
+  if(el){el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1500)}
+  renderWeekSummary();
+}
+
+function selTrain(i){trainDay=i;renderTrainDays();renderTrainContent();document.getElementById('train-days').children[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
+
+// ── NUTRITION ─────────────────────────────────────────────────────────
+
+function renderNutrDays(){
+  document.getElementById('nutr-days').innerHTML=NUTR_DAYS.map((d,i)=>
+    `<button class="day-chip ${i===nutrDay?'active':''}" onclick="selNutr(${i})">${d.label}</button>`).join('');
+}
+
+function renderNutrContent(){
+  const d=NUTR_DAYS[nutrDay];
+  const tp=d.meals.reduce((a,m)=>a+m.p,0),tk=d.meals.reduce((a,m)=>a+m.k,0),tf=d.meals.reduce((a,m)=>a+m.f,0),tc=d.meals.reduce((a,m)=>a+m.kcal,0);
+  document.getElementById('nutr-content').innerHTML=`
+  <div class="totals-row">
+    <div class="total-chip"><div class="tv">${tc}</div><div class="tl">kcal</div></div>
+    <div class="total-chip"><div class="tv">${tp}g</div><div class="tl">Protein</div></div>
+    <div class="total-chip"><div class="tv">${tk}g</div><div class="tl">KH</div></div>
+    <div class="total-chip"><div class="tv">${tf}g</div><div class="tl">Fett</div></div>
+  </div>
+  <div class="cards">${d.meals.map(m=>`<div class="card">
+    <div class="card-header"><span class="card-label">${m.title}</span><span class="card-time">${m.time}</span></div>
+    <div class="card-body">
+      <div class="card-name">${m.name}</div>
+      <div class="card-sub">${m.ingredients}</div>
+      <div class="tags"><span class="tag tag-p">P ${m.p}g</span><span class="tag tag-k">KH ${m.k}g</span><span class="tag tag-f">F ${m.f}g</span><span class="tag tag-cal">${m.kcal} kcal</span></div>
+    </div></div>`).join('')}</div>
+  <div class="day-note"><strong>Hinweis:</strong> ${d.note}</div><div class="spacer"></div>`;
+}
+
+function selNutr(i){nutrDay=i;renderNutrDays();renderNutrContent();document.getElementById('nutr-days').children[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}
+
+// ── SHOPPING ──────────────────────────────────────────────────────────
+
+function renderShopping(){
+  const total=SHOPPING.reduce((a,c)=>a+c.items.length,0);
+  const checked=Object.values(shopChecked).filter(Boolean).length;
+  const pct=Math.round(checked/total*100);
+  document.getElementById('shop-progress').innerHTML=`<div class="shop-prog-row"><span class="shop-prog-label">${checked} von ${total} Artikeln</span><span class="shop-prog-val">${pct}%</span></div><div class="shop-prog-bar"><div class="shop-prog-fill" style="width:${pct}%"></div></div>`;
+  document.getElementById('shop-content').innerHTML=SHOPPING.map(cat=>`<div class="shop-section">
+    <div class="shop-section-title">${cat.category}</div>
+    ${cat.items.map(item=>{const k=cat.category+'_'+item.name,c=shopChecked[k];return`<div class="shop-item ${c?'checked':''}" onclick="toggleShop('${k}')"><div class="shop-check">${c?'✓':''}</div><span class="shop-item-name">${item.name}</span><span class="shop-item-qty">${item.qty}</span></div>`;}).join('')}
+    <button class="shop-clear" onclick="clearCat('${cat.category}')">Kategorie zurücksetzen</button>
+  </div>`).join('')+'<div class="spacer"></div>';
+}
+
+function toggleShop(k){shopChecked[k]=!shopChecked[k];save('shopChecked',shopChecked);renderShopping()}
+function clearCat(cat){SHOPPING.find(c=>c.category===cat).items.forEach(i=>{delete shopChecked[cat+'_'+i.name]});save('shopChecked',shopChecked);renderShopping()}
+
+// ── RECIPES ───────────────────────────────────────────────────────────
+
+function renderRecipes(){
+  document.getElementById('recipes-content').innerHTML=RECIPES.map((r,i)=>`
+  <div class="recipe-card" id="rc${i}">
+    <div class="recipe-header" onclick="toggleRecipe(${i})">
+      <div><div class="recipe-title">${r.title}</div><div class="recipe-meta">⏱ ${r.time} · ${r.portions}</div></div>
+      <span class="recipe-chevron">▼</span>
+    </div>
+    <div class="recipe-body">
+      <div class="recipe-section">Zutaten</div>
+      ${r.ingredients.map(ing=>`<div class="recipe-ing">${ing}</div>`).join('')}
+      <div class="recipe-section">Zubereitung</div>
+      ${r.steps.map((s,j)=>`<div class="recipe-step"><div class="step-num">${j+1}</div><div class="step-text">${s}</div></div>`).join('')}
+      <div class="recipe-tip">💡 ${r.tip}</div>
+    </div>
+  </div>`).join('')+'<div class="spacer"></div>';
+}
+
+function toggleRecipe(i){document.getElementById('rc'+i).classList.toggle('open')}
+
+// ── PROGRESS ─────────────────────────────────────────────────────────
+
+function renderProgress(){
+  const last5=weightLog.slice(-5);
+  const hist=weightLog.length===0?'<div class="weight-empty">Noch kein Gewicht eingetragen.</div>'
+    :[...weightLog].reverse().slice(0,8).map((e,i,arr)=>{
+      const prev=arr[i+1];let dh='';
+      if(prev){const df=(e.weight-prev.weight).toFixed(1);dh=`<span class="weight-diff ${df>0?'up':'down'}">${df>0?'+':''}${df} kg</span>`}
+      return`<div class="weight-entry"><span class="weight-date">${e.date}</span><div style="display:flex;align-items:baseline;gap:8px">${dh}<span class="weight-val">${e.weight} kg</span></div></div>`;
+    }).join('');
+
+  let chart='';
+  if(last5.length>=2){
+    const vals=last5.map(e=>e.weight),mn=Math.min(...vals)-1,mx=Math.max(...vals)+1,W=300,H=70;
+    const pts=vals.map((v,i)=>`${(i/(vals.length-1))*(W-20)+10},${H-((v-mn)/(mx-mn))*(H-10)-5}`).join(' ');
+    chart=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:70px;margin-top:12px">
+      <polyline points="${pts}" fill="none" stroke="#c8ff00" stroke-width="2" stroke-linejoin="round"/>
+      ${vals.map((v,i)=>{const x=(i/(vals.length-1))*(W-20)+10,y=H-((v-mn)/(mx-mn))*(H-10)-5;return`<circle cx="${x}" cy="${y}" r="3" fill="#c8ff00"/><text x="${x}" y="${y-7}" text-anchor="middle" fill="#c8ff00" font-size="9" font-family="DM Sans">${v}</text>`}).join('')}
+    </svg>`;
+  }
+
+  let trackRows='';
+  TRAIN_DAYS.forEach(day=>{if(day.type==='train')day.exercises.filter(e=>e.priority).forEach(e=>{
+    const wt=loadTrack(e.id,'weight'),rp=loadTrack(e.id,'reps'),done=wt||rp;
+    trackRows+=`<div class="week-ex-row"><div class="week-ex-name">${day.label} · ${e.name}</div><div class="week-bar-wrap"><div class="week-bar" style="width:${done?100:0}%"></div></div><div class="week-ex-val">${done?(wt?wt+'kg ':'')+(rp?rp+' Wdh':''):'–'}</div></div>`;
+  })});
+
+  document.getElementById('progress-content').innerHTML=`
+  <div class="weight-card">
+    <div class="weight-title">Gewicht eintragen</div>
+    <div class="weight-input-row">
+      <input type="number" inputmode="decimal" step="0.1" placeholder="77.5" id="wi">
+      <button onclick="addWeight()">Speichern</button>
+    </div>
+    ${chart}
+    <div style="margin-top:12px">${hist}</div>
+  </div>
+  <div class="week-summary" style="margin:0 16px">
+    <div class="week-title">Wöchentliches Training · Übersicht</div>
+    ${trackRows||'<p style="font-size:12px;color:var(--muted)">Noch kein Training eingetragen. Geh auf Training und trage deine Gewichte ein.</p>'}
+  </div>
+  <div class="spacer"></div>`;
+}
+
+function addWeight(){
+  const inp=document.getElementById('wi'),v=parseFloat(inp.value);
+  if(!v||v<30||v>300)return;
+  const today=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  weightLog.push({date:today,weight:v});save('weightLog',weightLog);
+  inp.value='';renderProgress();
+}
+
+// ── SCREEN ────────────────────────────────────────────────────────────
+
+function switchScreen(name,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(name==='shopping')renderShopping();
+  if(name==='recipes')renderRecipes();
+  if(name==='progress')renderProgress();
+}
+
+// ── SERVICE WORKER ────────────────────────────────────────────────────
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
+
+// ── INIT ──────────────────────────────────────────────────────────────
+const todayIdx=[6,0,1,2,3,4,5][new Date().getDay()];
+trainDay=todayIdx;nutrDay=todayIdx;
+renderTrainDays();renderWeekSummary();renderTrainContent();
+renderNutrDays();renderNutrContent();
+</script>
+</body>
+</html>
